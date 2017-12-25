@@ -1,51 +1,80 @@
 
-//repairDigikam - a program to repair my broken digikam database
+//repairDigikam 
 //  A program to facilitate fixing my broken Digikam database.
 //
-//  Accepts two arguments:
+//  Accepts these arguments:
 //      -h --help  Help
 //      -i --infile input file of bad filename data.  Default nullAlbum.dat
 //      -o --outfile output file for corrected data.  Default namesCorrected.dat
 //  
 //
 //  Copyright (c) 2017, Ben Bailey.  All rights reservied.
-//  Use of this source code is governed by a BSD-stle
+//  Use of this source code is governed by MIT
 //  license that can be found in the LICENSE file.
 //
-//  Digikam is a photo manger.  I put a lot of time into identifying photos
-//  and putting them into this app.
-//  
-//  At some point, I changed file names that contained spaces to underscores.
-//  This caused Digikam to break, but I didn't realize this for months so
-//  it was going to be difficult to go back to original location and names.
+//  NOTE: This application assumes you are familiar with relational databases,
+//  and in particular, are familiar with Sqlite and sqlite3 for use in 
+//  creating a list of bad files from the Digikam Sqlite database, then inserting 
+//  the corrected information, created by this application (repairDigikam) into your 
+//  Digikam database.
 //
-//  Using sqlite3, I created an input file containing key and data 
-//  for problem files.  This program requires the structure of 
-//  this input file to be in the form: key|Filename, followed by a return/line-feed
+//  Digikam is a photo manger.  I put a lot of time into identifying photos
+//  and putting them into this app, then I broke the Digikam database.  
+//  It would take too much time to create a new instance of Digikam and 
+//  then derive and add all of the significant information to each photo again,
+//  so I must repair the database or lose the information!
+//  
+//  At some point, I changed file names on my directory containing photos, 
+//  that contained spaces to underscores.  This caused Digikam to break, 
+//  but I didn't realize this for months so it was going to be difficult to 
+//  go back to original location and names.
+//
+//  Digikam uses Sqlite as it's database engine.  A command line to assist
+//  in the use of Sqlite is sqlite3, which is free, available to multple platforms,
+//  and easy to use.
+//
+//  Using sqlite3, I searched my database for null entries in the location field.
+//  Digikam had placed nulls into that field when it next was started and scanned
+//  the directories, and unable to find the file at the expected location.  
+//  Using sqlite3, I created a file containing key and directory data for problem files.  
+//
+//  This program (repairDigikam) requires the structure of this input file to be 
+//  in the form: key|filename, followed by a return/line-feed, so this is the 
+//  required structure of the created input file.
+//
+//  
+//  How the program repairDigikam works:
+//
+//  External to this application: 
+//  - Using sqlite3 on the Digikam database, create a file containing bad filenames.
 //
 //  For every bad file name and location contained in the input file
-//   -if the name contains spaces, replace with underscore
+//   -if the name contains spaces, replace the space with an underscore
 //   -locate the corrected file name in existing directory structure on disk.
-//   -output corrections to be applied to digikam database via sqlite3, (key,data)
+//   -for each found file, add location and file information to an output file.
 //  
-//  A seperate effort (e.g., sqlite3) would insert the corrections into Digikam.
+//  External to this application:
+//   -apply output corrections created by this program (repairDigikam) to the Digikam 
+//    database via sqlite3, (key,data,<CR>)
 //
+//  Performance
+//  
 //  This program was able to load a file from disk containing 10,310 bad filenames,
 //  and walk, then load into a avltree, the 17,165 directory entries on the 
-//  hard drive.  For each bad file name, it corrected those names from " " to "_", 
-//  and matched those names against the 17,165 files in the avltree, and wrote 
-//  the resulting correction data to a file on disk.  This completed in less
+//  hard drive.  For each bad file name containing spaces, it corrected those names 
+//  from " " to "_", and matched those names against the 17,165 files in the avltree, 
+//  and wrote the resulting correction data to a file on disk.  This completed in less
 //  than a second on my desktop.
 //
-//  Internally, the program uses a an array for the bad filenames, which
-//  it iterates through sequentially for each bad filename to correct,
+//  Internally, the program (repairDigikam) uses a an array to store the bad 
+//  filenames, which it iterates through sequentially for each bad filename to correct,
 //  then searches for the location on the directory structure for the matching
 //  file.  In order to avoid the time associated with searching lineraly through
-//  the directory structure, it performs a filepath.Walk to find all of the
-//  directory entries and stores these into a balanced binary tree (avltree)
-//  for fast searches.  A test using a linear search resulted in a run time 
-//  of about 1 minute, so a significant improvement was obtained using the
-//  avltree.
+//  the directory structure, it performs a filepath.Walk at the start of the program
+//  to find all of the directory entries, and stores these into a balanced binary 
+//  tree (avltree) for fast searches.  A test using a linear search resulted in a run time 
+//  of about 1 minute vs around 1 second utilizing the binary tree, so a significant 
+//  improvement was obtained using the avltree.
 //  
 //  Package avltree states that it is "not thread safe", therefore,
 //  this application is not thread safe.
